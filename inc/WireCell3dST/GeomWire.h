@@ -2,10 +2,17 @@
 #define GEOMWIRE_3DST_h
 
 #include <vector>
+#include <set>
 
 namespace WireCell3DST {
 
-  struct Coordinates{int x, int y, int z};
+  struct Coordinates{int x; int y; int z;};
+
+  struct DataMeasureStructure{
+	double t_begin; 
+	double t_end;
+	std::vector<int> charges;
+  };
 
   class GeomWire{
   /*
@@ -20,17 +27,19 @@ namespace WireCell3DST {
 
   public:
 //    GeomWire(int index=-1);
-    GeomWire(int ix=-1, int iy=-1, int iz=-1);
+    GeomWire(int ichannel, int ix=-1, int iy=-1, int iz=-1);
 //    GeomWire(int index=-1, int channel=-1, int ix=-1, int iy=-1, int iz=-1);
     ~GeomWire();
 
     int get_index(){return _index;};
     int get_channel(){return _ichannel;};
-    int get_xcoord(){return _ix};
-    int get_ycoord(){return _iy};
-    int get_zcoord(){return _iz};
-    int set_index(int index=-1); //if return value is<0, then not giving the index correctly
+    int get_xcoord(){return _ix;};
+    int get_ycoord(){return _iy;};
+    int get_zcoord(){return _iz;};
     Coordinates get_coord();
+
+    int set_index(int index=-1); //if return value is<0, then not giving the index correctly
+
 
   private:
     int _index; // index in the vector 
@@ -39,9 +48,14 @@ namespace WireCell3DST {
     int _iy;
     int _iz;
 
+
   };
 
 
+  typedef std::vector<DataMeasureStructure>  DataMeasureSet;
+
+  typedef std::set<GeomWire> GeomWireSet;
+  typedef std::vector<int> GeomWireVect;
 
 }
 

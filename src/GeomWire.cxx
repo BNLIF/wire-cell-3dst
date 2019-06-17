@@ -1,15 +1,16 @@
-#include "GeomWire.h"
+#include "WireCell3dST/GeomWire.h"
 
-using namespace WireCell3DST
+using namespace WireCell3DST;
 
 //GeomWire::GeomWire(int index, int channel, int ix, int iy, int iz)
 GeomWire::GeomWire(int channel, int ix, int iy, int iz)
 //	: _index(index)
-	:_channel(channel)
+	:_ichannel(channel)
 	,_ix(ix)
 	,_iy(iy)
 	,_iz(iz)
 {
+//	_wireDataSet.clear();
 }
 
 GeomWire::~GeomWire()
@@ -27,3 +28,5 @@ int GeomWire::set_index(int index)
 	_index = index;
 	return _index;
 }
+
+

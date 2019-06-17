@@ -1,16 +1,16 @@
-#include <GeomCell.h>
+#include "WireCell3dST/GeomCell.h"
 
 
-use namespace WireCell3DST;
+using namespace WireCell3DST;
 
-GeomCell::GeomCell(int ix, int iy; int iz)
+GeomCell::GeomCell(int ix, int iy, int iz)
 	:_ix(ix)
 	,_iy(iy)
 	,_iz(iz)
 {
 }
 
-GeomCell::~CeomCell()
+GeomCell::~GeomCell()
 {
 }
 
@@ -36,4 +36,14 @@ Coordinates GeomCell::get_zwire()
 {
 	Coordinates c1 = {_ix, _iy, 0};
 	return c1;
+}
+
+int GeomCell::InitializeCellData(DataMeasureStructure cellData)
+{
+	_cellData.t_begin = cellData.t_begin;
+        _cellData.t_end = cellData.t_end;
+        _cellData.charges = cellData.charges; //copy the vector. Will it cause memory problem in the future???
+
+        return (int) _cellData.charges.size();
+
 }
