@@ -8,6 +8,20 @@ namespace WireCell3DST {
 
   struct Coordinates{int x; int y; int z;};
 
+  struct compareCoordinates{
+	bool operator()(const Coordinates c1, const Coordinates c2){
+		if(c1.z<c2.z)
+			return true;
+		else if(c1.y<c2.y)
+			return true;
+		else if(c1.x<c2.x)
+			return true;
+		else 
+			return false;
+	}
+
+  };
+
   struct DataMeasureStructure{
 //	double t_begin; 
 //	double t_end;
@@ -45,7 +59,7 @@ namespace WireCell3DST {
     int get_zcoord() const {return _iz;}
     Coordinates get_coord();
 
-    bool CheckValidity() const {//(const GeomWire& wire) const{
+    bool CheckWireValidity() const {//(const GeomWire& wire) const{
 	
 	    if(_ix==0&&_iy>0&&_iz>0)
 		    return true;
@@ -58,105 +72,7 @@ namespace WireCell3DST {
 
     }
 
-
-    ////
-    bool operator<(const GeomWire& wire) const{
-	    //shall check the validity of the GeomWire wire??? e.g. check whether ix=-1 iy=-1 and iz=-1
-	    int tocompare_x = wire.get_xcoord();
-	    int tocompare_y = wire.get_ycoord();
-	    int tocompare_z = wire.get_zcoord();
-	    if(!(wire.CheckValidity()))
-		    return false;
-	    if(_ix==0&&_iy>0&&_iz>0)//along axis
-	    {
-		    if(_ix==tocompare_x)
-		    {
-			if(_iz<tocompare_z)
-				return true;
-			else if(_iz==tocompare_z)
-			{
-				if(_iy<tocompare_y)
-					return true;
-				else
-                                    return false;
-			}
-			else 
-				return false;
-		    }
-		    else 
-			    return true;
-	    }
-	    else if(_ix>0&&_iy==0&&_iz>0)
-	    {
-		    if(tocompare_x==0)
-			    return false;
-		    if(_iy==tocompare_y)
-		    {
-			if(_iz<tocompare_z)
-				return true;
-			else if(_iz==tocompare_z)
-			{
-				if(_ix<tocompare_x)
-					return true;
-				else
-                                    return false;
-			}
-			else
-				return false;
-
-		    }
-		    else return true;
-	    }
-	    else if(_ix>0&&_iy>0&&_iz==0)
-	    {
-		    if(tocompare_x==0||tocompare_y==0)
-			    return false;
-		    if(_iz==tocompare_z)
-		    {
-			    if(_iy<tocompare_y)
-				    return true;
-			    else if(_iy<tocompare_y)
-			    {
-				if(_ix<tocompare_x)
-					return true;
-				else
-                                    return false;
-			    }
-			    else
-				    return false;
-		    }
-		    else
-			    return false;
-	    }
-	    else
-		    return false;//invalid this wire
-
-/*
-
-		    //
-	    if(_ix<tocompare_x)
-		    return true;
-	    else if(_ix==tocompare_x)
-	    {
-		    if(_iy<tocompare_y)
-			    return true;
-		    else if(_iy==tocompare_y)
-		    {
-			    if(_iz<tocompare_z)
-				return true;
-			    else 
-				    return false;
-
-		    }
-		    else 
-			    return false;
-	    }
-	    else
-		    return false;
-*/
-    }
-
-
+    bool operator<(const GeomWire& wire) const;
 
   private:
     int _index; // index in the vector 
@@ -177,22 +93,34 @@ namespace WireCell3DST {
 	  }
   };
 
-  struct compareWire{
+  struct compareGeomWire{
 	  bool operator()(const GeomWire wa, const GeomWire wb){
-		  if(wa.CheckValidity()&&wb.CheckValidity())
-		  {
+		  if(wa.CheckWireValidity()&&wb.CheckWireValidity())
 			  return (wa)<(wb);
+		  else
+			  return false;
+	  }
+  };
+
+  struct compareGeomWirePtr{
+	  bool operator()(const GeomWire* wa, const GeomWire* wb) const{
+		  if(wa && wb)
+		  {
+			  if(wa->CheckWireValidity()&&wb->CheckWireValidity())
+				  return (*wa)<(*wb);
+			  else
+				  return false;
 		  }
 		  else
 			  return false;
 	  }
   };
 
-
   typedef std::vector<DataMeasureStructure>  DataMeasureVect;
   typedef std::set<DataMeasureStructure, compareDataMeasure>  DataMeasureSet;
 
-  typedef std::set<GeomWire, compareWire> GeomWireSet;
+  typedef std::set<GeomWire, compareGeomWire> GeomWireSet;
+  typedef std::set<const GeomWire*, compareGeomWirePtr> GeomWirePtrSet;
   typedef std::vector<int> GeomWireVect;
   typedef std::vector<const GeomWire*> GeomWireSelection;
 

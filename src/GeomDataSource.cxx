@@ -40,7 +40,7 @@ void GeomDataSource::add_wire(GeomWire& wire)
 
 bool GeomDataSource::wiresCrossCoord(const GeomWire& wire1, const GeomWire& wire2, Coordinates& coord)
 {
-	if(!wire1.CheckValidity()||!wire2.CheckValidity())
+	if(!wire1.CheckWireValidity()||!wire2.CheckWireValidity())
 		return false;
 	//could simply the code below.By just comparing any coord same thenuse max.  will do it later. 
 	if((wire1.get_xcoord()==0&&wire2.get_ycoord()==0)||(wire1.get_ycoord()==0&&wire2.get_xcoord()==0))

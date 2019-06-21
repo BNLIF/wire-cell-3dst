@@ -20,6 +20,12 @@ int GeomCell::set_index(int index)
 	return _index;
 }
 
+Coordinates GeomCell::get_coord() const
+{
+	Coordinates c1 = {_ix, _iy, _iz};
+	return c1;
+}
+
 Coordinates GeomCell::get_xwire()
 {
 	Coordinates c1 = {0, _iy, _iz};

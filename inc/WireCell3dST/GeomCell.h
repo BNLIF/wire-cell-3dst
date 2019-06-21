@@ -25,6 +25,7 @@ namespace WireCell3DST {
 		int get_xcoord() const {return _ix;}
 		int get_ycoord() const {return _iy;}
 		int get_zcoord() const {return _iz;}
+		Coordinates get_coord() const;
 		int set_index(int index=-1);
 		Coordinates get_xwire(); //get the wire passing this cell and along x-axis
 		Coordinates get_ywire();
@@ -53,6 +54,22 @@ namespace WireCell3DST {
 				return false;
 		}
 
+		bool operator<(const GeomCell& cell) const{
+			if(CheckCellValidity()&&cell.CheckCellValidity())
+			{
+				if(_iz<cell.get_zcoord())
+					return true;
+				else if(_iy<cell.get_ycoord())
+					return true;
+				else if(_ix<cell.get_xcoord())
+					return true;
+				else
+					return false;
+			}
+			else 
+				return false;
+		}
+
 	private:
 		int _index; //index in the vector
 		int _ix; //coordinate		
@@ -62,7 +79,27 @@ namespace WireCell3DST {
 
 	};
 
-	typedef std::set<GeomCell> GeomCellSet;
+	struct compareGeomCellPtr
+	{
+		bool operator()(const GeomCell* ptr_c1, const GeomCell* ptr_c2) const
+		{
+			if(ptr_c1&&ptr_c2)
+			{
+				if(ptr_c1->CheckCellValidity()&&ptr_c2->CheckCellValidity())
+					return (*ptr_c1)<(*ptr_c2);
+				else
+					return false;
+			}
+			else
+				return false;
+		}
+	};
+
+	typedef std::set<Coordinates, compareCoordinates> CoordinateSet;
+
+//	typedef std::set<GeomCell> GeomCellSet;
+	typedef std::set<const GeomCell*, compareGeomCellPtr> GeomCellPtrSet;
+
 	typedef std::vector<int> GeomCellVect;
 	typedef std::vector<const GeomCell*> GeomCellSelection;
 
