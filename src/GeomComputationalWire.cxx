@@ -15,8 +15,9 @@ GeomComputationalWire::~GeomComputationalWire()
 
 int GeomComputationalWire::InitializeWireData(DataMeasureStructure wireData)
 {
-	_wireData.t_begin = wireData.t_begin;
-	_wireData.t_end = wireData.t_end;
+//	_wireData.t_begin = wireData.t_begin;
+//	_wireData.t_end = wireData.t_end;
+	_wireData.time = wireData.time;
 	_wireData.charges = wireData.charges; //copy the vector. Will it cause memory problem in the future???
 
 	return (int) _wireData.charges.size();

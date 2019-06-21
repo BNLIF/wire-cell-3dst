@@ -26,7 +26,7 @@ Coordinates GeomCell::get_xwire()
 	return c1;
 }
 
-Coordinates GeomCell::get_ywire()
+Coordinates GeomCell::get_ywire() 
 {
 	Coordinates c1 = {_ix, 0, _iz};
 	return c1;
@@ -40,8 +40,9 @@ Coordinates GeomCell::get_zwire()
 
 int GeomCell::InitializeCellData(DataMeasureStructure cellData)
 {
-	_cellData.t_begin = cellData.t_begin;
-        _cellData.t_end = cellData.t_end;
+//	_cellData.t_begin = cellData.t_begin;
+//        _cellData.t_end = cellData.t_end;
+	_cellData.time = cellData.time;
         _cellData.charges = cellData.charges; //copy the vector. Will it cause memory problem in the future???
 
         return (int) _cellData.charges.size();

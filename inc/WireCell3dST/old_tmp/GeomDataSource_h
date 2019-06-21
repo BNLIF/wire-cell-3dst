@@ -22,25 +22,25 @@ namespace WireCell3DST {
 //		GeomDataSource(const char* filename);
 		~GeomDataSource();
 
-		void add_wire(GeomWire& wire);
-		const GeomWireSet& get_wireset() const{return _wireset;}
+//		void add_wire(GeomWire& wire);
+		void add_wire(GeomPhysicalWire& wire);
+//		const GeomWireSet& get_wireset() const;
 //		const GeomWireVect& get_wirevect() const;
 
 //		void load(std::istream &data);
-//
-		bool wiresCrossCoord(const GeomWire& wire1, const GeomWire& wire2, Coordinates& coord);
 
 	private:
-		GeomWireSet _wireset;
+//		GeomWireSet _wireset;
 //		GeomWireVect _wirevect;
 
+		GeomPhysicalWireSet _physWireSet;
 
-//		mutable std::map<GeomWire, GeomCellSet> PhysWire2CellSetMap;
+		mutable std::map<GeomPhysicalWire, GeomCellSet> PhysWire2CellSetMap;
 //		mutable std::map<GeomCell, ObjectXYZ<GeomComputationalWire>> Cell2CompWireMap;
 
 
-//		bool buildPhysWireCellSetMap();
-//		bool buildCellCompWireMap();
+		bool buildPhysWireCellSetMap();
+		bool buildCellCompWireMap();
 	};
 
 

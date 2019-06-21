@@ -17,6 +17,7 @@ namespace WireCell3DST{
 
 	private:
 		DataMeasureStructure _wireData;
+		
 
 	};
 
