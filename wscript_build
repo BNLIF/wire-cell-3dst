@@ -1,2 +1,2 @@
 #!/usr/bin/env python
-bld.make_package('WireCell3dST', use='WireCellRess EIGEN BOOST ROOTSYS')
+bld.make_package('WCP3dST', use='WCPRess EIGEN BOOST ROOTSYS')

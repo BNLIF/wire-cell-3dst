@@ -1,9 +1,9 @@
 #include <fstream>
 #include <cassert>
 
-#include "WireCell3dST/GeomDataSource.h"
+#include "WCP3dST/GeomDataSource.h"
 
-using namespace WireCell3DST;
+using namespace WCP3DST;
 
 GeomDataSource::GeomDataSource()
 {

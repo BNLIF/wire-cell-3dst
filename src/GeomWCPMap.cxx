@@ -1,7 +1,7 @@
-#include "WireCell3dST/GeomWireCellMap.h"
+#include "WCP3dST/GeomWCPMap.h"
 #include <vector>
 
-using namespace WireCell3DST;
+using namespace WCP3DST;
 
 Tiling::Tiling()
 {

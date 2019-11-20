@@ -3,7 +3,7 @@
 
 #include <vector>
 
-namespace WireCell3DST {
+namespace WCP3DST {
   class THREEDSTCell {
   public:
     THREEDSTCell(int index);

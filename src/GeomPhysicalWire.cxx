@@ -1,6 +1,6 @@
-#include "WireCell3dST/GeomPhysicalWire.h"
+#include "WCP3dST/GeomPhysicalWire.h"
 
-using namespace WireCell3DST;
+using namespace WCP3DST;
 
 GeomPhysicalWire::GeomPhysicalWire(int ichannel, int ix, int iy, int iz)
 	:GeomWire(ichannel, ix, iy, iz)

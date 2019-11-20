@@ -1,6 +1,6 @@
 #include <iostream>
-#include "WireCell3dST/THREEDST-Cell.h"
-using namespace WireCell3DST;
+#include "WCP3dST/THREEDST-Cell.h"
+using namespace WCP3DST;
 using namespace std;
 
 

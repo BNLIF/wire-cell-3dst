@@ -1,6 +1,6 @@
-#include "WireCell3dST/GeomWire.h"
+#include "WCP3dST/GeomWire.h"
 
-using namespace WireCell3DST;
+using namespace WCP3DST;
 
 //GeomWire::GeomWire(int index, int channel, int ix, int iy, int iz)
 GeomWire::GeomWire(int channel, int ix, int iy, int iz)

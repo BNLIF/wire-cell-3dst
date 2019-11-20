@@ -1,6 +1,6 @@
-#include "WireCell3dST/THREEDST-Cell.h"
+#include "WCP3dST/THREEDST-Cell.h"
 
-using namespace WireCell3DST;
+using namespace WCP3DST;
 
 THREEDSTCell::THREEDSTCell(int index)
 : index(index)

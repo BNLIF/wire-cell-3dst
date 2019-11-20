@@ -4,7 +4,7 @@
 #include <vector>
 #include <set>
 
-namespace WireCell3DST {
+namespace WCP3DST {
 
   struct Coordinates{int x; int y; int z;};
 

@@ -3,7 +3,7 @@
 
 #include "GeomWire.h"
 
-namespace WireCell3DST{
+namespace WCP3DST{
 
 	class GeomComputationalWire: public GeomWire{
 

@@ -1,7 +1,7 @@
-#include "WireCell3dST/GeomCell.h"
+#include "WCP3dST/GeomCell.h"
 
 
-using namespace WireCell3DST;
+using namespace WCP3DST;
 
 GeomCell::GeomCell(int ix, int iy, int iz)
 	:_ix(ix)

@@ -7,7 +7,7 @@
 
 #include <map>
 
-namespace WireCell3DST{
+namespace WCP3DST{
 
     typedef std::map<const GeomCell*, GeomWireSelection> GeomCell2WiresMap;
     typedef std::map<const GeomWire*, GeomCellSelection> GeomWire2CellsMap;

@@ -1,6 +1,6 @@
-#include "WireCell3dST/GeomComputationalWire.h"
+#include "WCP3dST/GeomComputationalWire.h"
 
-using namespace WireCell3DST;
+using namespace WCP3DST;
 
 
 GeomComputationalWire::GeomComputationalWire(int ichannel, int ix, int iy, int iz)

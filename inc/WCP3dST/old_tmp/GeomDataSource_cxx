@@ -1,9 +1,9 @@
 #include <fstream>
 #include <cassert>
 
-#include "WireCell3dST/GeomDataSource.h"
+#include "WCP3dST/GeomDataSource.h"
 
-using namespace WireCell3DST;
+using namespace WCP3DST;
 
 GeomDataSource::GeomDataSource()
 {
@@ -44,7 +44,7 @@ void GeomDataSource::add_wire(GeomPhysicalWire& wire)
 }
 
 
-bool GeomDataSource::buildPhysWireCellSetMap()
+bool GeomDataSource::buildPhysWCPSetMap()
 {
 	size_t num = _physWireSet.size();
 	PhysWire2CellSetMap.clear();
