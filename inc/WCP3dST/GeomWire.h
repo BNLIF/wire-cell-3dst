@@ -9,7 +9,7 @@ namespace WCP3DST {
   struct Coordinates{int x; int y; int z;};
 
   struct compareCoordinates{
-	bool operator()(const Coordinates c1, const Coordinates c2){
+	bool operator()(const Coordinates c1, const Coordinates c2) const{
 		if(c1.z<c2.z)
 			return true;
 		else if(c1.y<c2.y)
@@ -85,7 +85,7 @@ namespace WCP3DST {
   };
 
   struct compareDataMeasure{
-	  bool operator()(DataMeasureStructure ma, DataMeasureStructure mb){
+	  bool operator()(DataMeasureStructure ma, DataMeasureStructure mb) const {
 		  if(ma.time.size()>0&&mb.time.size()>0)
 			  return (ma.time[0]<mb.time[0]);
 		  else 
@@ -94,7 +94,7 @@ namespace WCP3DST {
   };
 
   struct compareGeomWire{
-	  bool operator()(const GeomWire wa, const GeomWire wb){
+	  bool operator()(const GeomWire wa, const GeomWire wb) const {
 		  if(wa.CheckWireValidity()&&wb.CheckWireValidity())
 			  return (wa)<(wb);
 		  else
