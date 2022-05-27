@@ -1,7 +1,262 @@
 #include "WCP3dST/Signal.h"
 #include "TRandom.h"
-
+#include "WCPRess/LassoModel.h"
+#include "WCPRess/ElasticNetModel.h"
+#include <Eigen/Dense>
+#include <TVirtualFFT.h>
+#include <TFile.h>
 #include <iostream>
+
+#include <set>
+#include <map>
+
+using namespace Eigen;
+
+void WCPPIONEER::l1_fit(TH1F *h_nois, TGraph *g_resp, TH1F *h_sig, double gain, TH1F *h_sig_true){
+  const int nbin = h_sig->GetNbinsX();
+  double t_min = h_sig->GetBinCenter(1);
+  double t_max = h_sig->GetBinCenter(nbin);
+
+  std::vector<double> vals_x;
+  // std::vector<double> vals_xmin;
+  // std::vector<double> vals_xmax;
+  std::vector<double> vals_y;
+  std::vector<double> vals_yth;
+  for (Int_t i=0;i!=h_nois->GetNbinsX();i++){
+    double t = h_nois->GetBinCenter(i+1);
+    double content = h_nois->GetBinContent(i+1);
+    if (t >= t_min && t<=t_max+20){
+      vals_x.push_back(t);
+      // vals_xmin.push_back(h_nois->GetBinLowEdge(i+1));
+      // vals_xmax.push_back(h_nois->GetBinLowEdge(i+1) + h_nois->GetBinWidth(i+1));
+      vals_y.push_back(content);
+
+      if (fabs(content) > 2.8*3){
+	vals_yth.push_back(fabs(content)/2.8);
+      }else{
+	vals_yth.push_back(0);
+      }
+    }
+  }
+  int nbin_fit = vals_x.size();
+
+  //WCPPIONEER::interpolate(vals_x, vals_y, h_sig->GetBinWidth(1));
+
+  
+  VectorXd W = VectorXd::Zero(nbin_fit);
+  MatrixXd G = MatrixXd::Zero(nbin_fit, nbin);
+
+  //  std::cout << nbin_fit << " " << nbin << " " << gain << std::endl;
+
+  // check threshold ...
+  for (int i = 0; i!=nbin_fit; i++){
+    double sum = vals_yth.at(i);
+    double max = vals_yth.at(i);
+    if (i >0) {
+      sum += vals_yth.at(i-1);
+      if (vals_yth.at(i-1)> max) max = vals_yth.at(i-1);
+    }
+    if (i < nbin_fit-1) {
+      sum += vals_yth.at(i+1);
+      if (vals_yth.at(i+1) > max) max = vals_yth.at(i+1);
+    }
+    
+    if (!(max > 4 && sum >6)) vals_yth.at(i) = 0;
+  }
+
+  std::map<int, double> indices;
+  
+  for (Int_t i=0;i!=nbin_fit;i++){
+    if (i==0){
+      if (vals_yth.at(i) >0 ) {
+	// indices.insert(0);
+	// indices.insert(1);
+	// indices.insert(2);
+	// indices.insert(3);
+
+	double max = 0;
+	for (Int_t k=0;k!=4;k++){
+	  if (k < nbin_fit)
+	    if (max < vals_yth.at(k)) max = vals_yth.at(k); 
+	}
+	for (Int_t k=0;k!=4;k++){
+	  if (k < nbin_fit)
+	    if (vals_yth.at(k) > 0)
+	      indices[i] = max;
+	}
+      }
+    }else{
+      if (vals_yth.at(i) >0 && vals_yth.at(i-1) ==0 ) {
+
+	double max = 0;
+	for (Int_t k=0;k!=4;k++){
+	  if (i+k < nbin_fit)
+	    if (max < vals_yth.at(i+k)) max = vals_yth.at(i+k); 
+	}
+	indices[i] = max;
+	for (Int_t k=1;k!=4;k++){
+	  if (i-k>=0) indices[i-k] = max; //.insert(i-k);
+	  if (i+k < nbin_fit)
+	    if (vals_yth.at(i+k) > 0 ) indices[i+k] = max; //.insert(i+k);
+	}
+      }
+    }
+  }
+
+  //std::cout << indices.size() << std::endl;
+
+  
+  
+  for (Int_t i=0;i!=nbin_fit;i++){
+
+    double scale = 1;
+    auto it = indices.find(i);
+    if (it != indices.end()) {
+      double max = 20;
+      if (max < it->second) max = it->second;
+      scale = 20 / max;
+      if (scale < 0.1) scale = 0.1;
+      //      std::cout << i << " " << scale << std::endl;
+      //scale = 1.0;
+      //std::cout << i << " " << indices[i] << std::endl;
+    }
+    
+    double error = sqrt(2.8*2.8+ pow(vals_y.at(i)*0.02,2)); // 2% uncertainty ...
+    
+    W(i) = vals_y.at(i) / error / gain / scale;
+    double t1 = vals_x.at(i);
+    // double t1_min = vals_xmin.at(i);
+    // double t1_max = vals_xmax.at(i);
+
+    //    std::cout << t1 << " " << t1_min << " " << t1_max << std::endl;
+    
+    for (Int_t j=0; j!=nbin; j++){
+      double t2 = h_sig->GetBinCenter(j+1);
+      double t2_min = h_sig->GetBinLowEdge(j+1);
+      double t2_max = t2_min + h_sig->GetBinWidth(j+1);
+      
+      double sum = 0, sum1 = 0;
+      // for (Int_t k=0;k!=10;k++){
+      // 	// 	double t = t1_min + (k+0.5)/10.*(t1_max - t1_min);
+      // 	//if (t>=t2){
+      // 	double t = t2_min + (k+0.5)/10.*(t2_max - t2_min);
+      // 	if (t1 >=t){
+      // 	  sum += g_resp->Eval(t1-t);
+      // 	  sum1 ++;
+      // 	}
+      // }
+      if (t1 > t2){
+      	sum = g_resp->Eval(t1-t2);
+      	sum1 = 1;
+      }
+      
+      
+      if (sum1 > 0){
+	//      if (t1 > t2)
+	//	std::cout << g_resp->Eval(t1-t2) << " " << sum/sum1 << std::endl;
+	//	G(i,j) = g_resp->Eval(t1-t2) /2.8 / 6241. * 200; // fC and normalize by ENC
+	G(i,j) = sum/sum1 /error / 6241. * 200 / scale; // fC and normalize by ENC
+      }else
+	G(i,j) = 0;
+    }
+  }
+
+  double lambda = 1.0;
+  WCP::LassoModel m2(lambda, 100000, 0.05);
+  m2.SetData(G, W);
+  m2.Fit();
+  VectorXd beta = m2.Getbeta();
+
+  VectorXd Wp = G * beta;
+
+  VectorXd beta_true = beta;
+  
+  for (int i=0;i!=nbin;i++){
+    
+    // std::cout << beta(i) << std::endl;
+    h_sig->SetBinContent(i+1,beta(i) * gain * 200./6241.);
+    beta_true(i) = h_sig_true->GetBinContent(i+1)/gain/200.*6241.;
+  }
+
+  VectorXd Wpp = G * beta_true;
+
+  for (Int_t i=0;i!=nbin_fit;i++){
+    //    std::cout << i << " " << vals_yth.at(i) << " " << W(i) << " " << Wp(i)  << " " << Wpp(i) << std::endl;
+  }
+  
+  
+}
+
+void WCPPIONEER::interpolate(std::vector<double>& vals_x, std::vector<double>& vals_y, double bin_width){
+  double old_width = (vals_x.back()-vals_x.front())*1.0/(vals_x.size()-1);
+  TH1F *htemp1 = new TH1F("htemp1","htemp1",vals_x.size(),vals_x.front() - old_width/2. , vals_x.back() + old_width/2.);
+  for (Int_t i=0;i!=vals_x.size();i++){
+    htemp1->SetBinContent(i+1, vals_y.at(i));
+  }
+  TH1 *htemp1_r = htemp1->FFT(0,"MAG");
+  TH1 *htemp1_ph = htemp1->FFT(0,"PH");
+
+  int new_nbins = vals_x.size() * int(old_width/bin_width);
+  // hold the signal 
+  TH1F *htemp2 = new TH1F("htemp2","htemp2", new_nbins , vals_x.front() - old_width/2. , vals_x.back() + old_width/2.);
+
+  const Int_t old_nbin = htemp1->GetNbinsX();
+  const Int_t nbin = htemp2->GetNbinsX();
+  Int_t shift = nbin/old_nbin/2.;
+
+  // std::cout << "Interpolate " << nbin << " " << old_nbin << " " << shift << std::endl;
+  
+  double value_re[nbin];
+  double value_im[nbin];
+  for (Int_t i=0;i!=nbin;i++){
+    if (i < old_nbin/2. || i > nbin - old_nbin/2.){
+      value_re[i] = htemp1_r->GetBinContent(i+1) * cos(htemp1_ph->GetBinContent(i+1))/old_nbin ;
+      value_im[i] = htemp1_r->GetBinContent(i+1) * sin(htemp1_ph->GetBinContent(i+1))/old_nbin ;
+    }else{
+      value_re[i] = 0;
+      value_im[i] = 0;
+    }
+  }
+
+  Int_t n = nbin;
+  TVirtualFFT *ifft = TVirtualFFT::FFT(1,&n,"C2R M K");
+  ifft->SetPointsComplex(value_re,value_im);
+  ifft->Transform();
+  TH1 *fb = TH1::TransformHisto(ifft,0,"Re");
+
+  for (Int_t i=0;i!=nbin;i++){
+    int bin_num = i+1-shift;
+    if (bin_num <0) bin_num += nbin;
+    
+    htemp2->SetBinContent(i+1,fb->GetBinContent(bin_num));
+  }
+
+
+  vals_x.clear();
+  vals_y.clear();
+  for (Int_t i=0;i!=htemp2->GetNbinsX();i++){
+    vals_x.push_back(htemp2->GetBinCenter(i+1));
+    vals_y.push_back(htemp2->GetBinContent(i+1));
+  }
+
+  // TFile *file1 = new TFile("temp.root","RECREATE");
+  // htemp1->SetDirectory(file1);
+  // htemp2->SetDirectory(file1);
+  // file1->Write();
+  // file1->Close();
+  
+  
+  delete fb;
+  delete ifft;
+  
+  delete htemp1;
+  delete htemp2;
+  delete htemp1_r;
+  delete htemp1_ph;
+  
+  //  std::cout << vals_x.front() << " " << vals_x.back() << " " << bin_width << " " << (vals_x.back()-vals_x.front())*1.0/(vals_x.size()-1) << std::endl;
+}
+
 
 void WCPPIONEER::cal_track(double x_start, double x_end, double scale, double gain, TH1F *h_tot, TH1F* he, TH1F *hh, TH1F *hge, TH1F *hgh, int flag_random , double x_cathode){
   
