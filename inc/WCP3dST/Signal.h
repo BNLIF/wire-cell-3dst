@@ -11,6 +11,8 @@ namespace WCPPIONEER{
 
   void l1_fit(TH1F *h_nois, TGraph *g_resp, TH1F *h_sig, double gain, TH1F* h_sig_true);
 
+  double detect_t0(TH1F *h_sig, double threshold);
+
   void interpolate(std::vector<double>& vals_x, std::vector<double>& vals_y, double bin_width);
   
 }

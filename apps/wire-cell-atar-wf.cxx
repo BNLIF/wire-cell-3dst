@@ -6,6 +6,7 @@
 #include "TRandom.h"
 #include "TFile.h"
 #include "TVirtualFFT.h"
+#include "TTree.h"
 
 using namespace WCPPIONEER;
 using namespace std;
@@ -18,6 +19,10 @@ int main(int argc, char* argv[])
   double gain = 9;
   double t0 = 6.31;
   int seed = 0;
+  double norm = 1.;
+  int nbin = 250;
+  double x1 = 0;
+  double x2 = 120;
   for(Int_t i = 1; i < argc; i++){
     switch(argv[i][1]){
     case 'n':
@@ -35,6 +40,18 @@ int main(int argc, char* argv[])
     case 's':
       seed = atoi(&argv[i][2]);
       break;
+    case 'm':
+      norm = atof(&argv[i][2]);
+      break;
+    case 'b':
+      nbin = atoi(&argv[i][2]);
+      break;
+    case 'x':
+      x1 = atof(&argv[i][2]);
+      break;
+    case 'y':
+      x2 = atof(&argv[i][2]);
+      break;
     }
   }
 
@@ -42,6 +59,9 @@ int main(int argc, char* argv[])
   std::cout << "Gain: " << gain << std::endl;
   
   gRandom->SetSeed(seed);
+
+  t0 = gRandom->Uniform(6.0,6.5);
+  
   
   Double_t x[500]={0.025, 0.075, 0.125, 0.175, 0.225, 0.275, 0.325, 0.375, 0.425, 0.475, 0.525, 0.575, 0.625, 0.675, 0.725, 0.775, 0.825, 0.875, 0.925, 0.975, 1.025, 1.075, 1.125, 1.175, 1.225, 1.275, 1.325, 1.375, 1.425, 1.475, 1.525, 1.575, 1.625, 1.675, 1.725, 1.775, 1.825, 1.875, 1.925, 1.975, 2.025, 2.075, 2.125, 2.175, 2.225, 2.275, 2.325, 2.375, 2.425, 2.475, 2.525, 2.575, 2.625, 2.675, 2.725, 2.775, 2.825, 2.875, 2.925, 2.975, 3.025, 3.075, 3.125, 3.175, 3.225, 3.275, 3.325, 3.375, 3.425, 3.475, 3.525, 3.575, 3.625, 3.675, 3.725, 3.775, 3.825, 3.875, 3.925, 3.975, 4.025, 4.075, 4.125, 4.175, 4.225, 4.275, 4.325, 4.375, 4.425, 4.475, 4.525, 4.575, 4.625, 4.675, 4.725, 4.775, 4.825, 4.875, 4.925, 4.975, 5.025, 5.075, 5.125, 5.175, 5.225, 5.275, 5.325, 5.375, 5.425, 5.475, 5.525, 5.575, 5.625, 5.675, 5.725, 5.775, 5.825, 5.875, 5.925, 5.975, 6.025, 6.075, 6.125, 6.175, 6.225, 6.275, 6.325, 6.375, 6.425, 6.475, 6.525, 6.575, 6.625, 6.675, 6.725, 6.775, 6.825, 6.875, 6.925, 6.975, 7.025, 7.075, 7.125, 7.175, 7.225, 7.275, 7.325, 7.375, 7.425, 7.475, 7.525, 7.575, 7.625, 7.675, 7.725, 7.775, 7.825, 7.875, 7.925, 7.975, 8.025, 8.075, 8.125, 8.175, 8.225, 8.275, 8.325, 8.375, 8.425, 8.475, 8.525, 8.575, 8.625, 8.675, 8.725, 8.775, 8.825, 8.875, 8.925, 8.975, 9.025, 9.075, 9.125, 9.175, 9.225, 9.275, 9.325, 9.375, 9.425, 9.475, 9.525, 9.575, 9.625, 9.675, 9.725, 9.775, 9.825, 9.875, 9.925, 9.975, 10.025, 10.075, 10.125, 10.175, 10.225, 10.275, 10.325, 10.375, 10.425, 10.475, 10.525, 10.575, 10.625, 10.675, 10.725, 10.775, 10.825, 10.875, 10.925, 10.975, 11.025, 11.075, 11.125, 11.175, 11.225, 11.275, 11.325, 11.375, 11.425, 11.475, 11.525, 11.575, 11.625, 11.675, 11.725, 11.775, 11.825, 11.875, 11.925, 11.975, 12.025, 12.075, 12.125, 12.175, 12.225, 12.275, 12.325, 12.375, 12.425, 12.475, 12.525, 12.575, 12.625, 12.675, 12.725, 12.775, 12.825, 12.875, 12.925, 12.975, 13.025, 13.075, 13.125, 13.175, 13.225, 13.275, 13.325, 13.375, 13.425, 13.475, 13.525, 13.575, 13.625, 13.675, 13.725, 13.775, 13.825, 13.875, 13.925, 13.975, 14.025, 14.075, 14.125, 14.175, 14.225, 14.275, 14.325, 14.375, 14.425, 14.475, 14.525, 14.575, 14.625, 14.675, 14.725, 14.775, 14.825, 14.875, 14.925, 14.975, 15.025, 15.075, 15.125, 15.175, 15.225, 15.275, 15.325, 15.375, 15.425, 15.475, 15.525, 15.575, 15.625, 15.675, 15.725, 15.775, 15.825, 15.875, 15.925, 15.975, 16.025, 16.075, 16.125, 16.175, 16.225, 16.275, 16.325, 16.375, 16.425, 16.475, 16.525, 16.575, 16.625, 16.675, 16.725, 16.775, 16.825, 16.875, 16.925, 16.975, 17.025, 17.075, 17.125, 17.175, 17.225, 17.275, 17.325, 17.375, 17.425, 17.475, 17.525, 17.575, 17.625, 17.675, 17.725, 17.775, 17.825, 17.875, 17.925, 17.975, 18.025, 18.075, 18.125, 18.175, 18.225, 18.275, 18.325, 18.375, 18.425, 18.475, 18.525, 18.575, 18.625, 18.675, 18.725, 18.775, 18.825, 18.875, 18.925, 18.975, 19.025, 19.075, 19.125, 19.175, 19.225, 19.275, 19.325, 19.375, 19.425, 19.475, 19.525, 19.575, 19.625, 19.675, 19.725, 19.775, 19.825, 19.875, 19.925, 19.975, 20.025, 20.075, 20.125, 20.175, 20.225, 20.275, 20.325, 20.375, 20.425, 20.475, 20.525, 20.575, 20.625, 20.675, 20.725, 20.775, 20.825, 20.875, 20.925, 20.975, 21.025, 21.075, 21.125, 21.175, 21.225, 21.275, 21.325, 21.375, 21.425, 21.475, 21.525, 21.575, 21.625, 21.675, 21.725, 21.775, 21.825, 21.875, 21.925, 21.975, 22.025, 22.075, 22.125, 22.175, 22.225, 22.275, 22.325, 22.375, 22.425, 22.475, 22.525, 22.575, 22.625, 22.675, 22.725, 22.775, 22.825, 22.875, 22.925, 22.975, 23.025, 23.075, 23.125, 23.175, 23.225, 23.275, 23.325, 23.375, 23.425, 23.475, 23.525, 23.575, 23.625, 23.675, 23.725, 23.775, 23.825, 23.875, 23.925, 23.975, 24.025, 24.075, 24.125, 24.175, 24.225, 24.275, 24.325, 24.375, 24.425, 24.475, 24.525, 24.575, 24.625, 24.675, 24.725, 24.775, 24.825, 24.875, 24.925, 24.975};
 
@@ -73,7 +93,7 @@ int main(int argc, char* argv[])
   TH1F *hge = (TH1F*)h_tot->Clone("hge");
   TH1F *hgh = (TH1F*)h_tot->Clone("hgh");
   
-  cal_track(0,120,1,gain,h_tot,he, hh, hge, hgh, flag_fluct,120);
+  cal_track(x1,x2,1,gain,h_tot,he, hh, hge, hgh, flag_fluct,120);
 
   // convolute with electronics response ...
 
@@ -97,7 +117,7 @@ int main(int argc, char* argv[])
   TH1F *hsig = new TH1F("hsig","hsig",1000,0,20);
   for (Int_t i=0;i!=hele->GetNbinsX();i++){
     if (hsig->GetBinCenter(i+1) >= t0)
-      hsig->SetBinContent(i+1,g_signal->Eval(hsig->GetBinCenter(i+1)-t0) * 1e6 * hsig->GetBinWidth(i+1));
+      hsig->SetBinContent(i+1,g_signal->Eval(hsig->GetBinCenter(i+1)-t0) * 1e6 * hsig->GetBinWidth(i+1)*norm);
     hele->SetBinContent(i+1,g_ele->Eval(hele->GetBinCenter(i+1)));
   }
   TH1 *hele_r = hele->FFT(0,"MAG");
@@ -131,7 +151,7 @@ int main(int argc, char* argv[])
     TH1 *fb = TH1::TransformHisto(ifft,0,"Re");
     //fb->Draw();
     for (Int_t i=0;i!=fb->GetNbinsX();i++){
-      g_signal_conv->SetPoint(i,hele->GetBinCenter(i+1), fb->GetBinContent(i+1));
+      g_signal_conv->SetPoint(i,hele->GetBinCenter(i+1), fb->GetBinContent(i+1) );
     }
     delete ifft;
     delete fb;
@@ -148,7 +168,7 @@ int main(int argc, char* argv[])
     Double_t t = h_nois->GetBinCenter(i+1);
     // Double_t content =  g_signal_conv->Eval(t-t0);
     // if (t-t0 <0) content= 0;
-    Double_t content = g_signal_conv->Eval(t);
+    Double_t content = g_signal_conv->Eval(t) ;
     if (t > 20) content = 0;
     h_nois->SetBinContent(i+1, h_nois->GetBinContent(i+1) + content);
   }
@@ -158,7 +178,7 @@ int main(int argc, char* argv[])
   TGraph *gtemp = new TGraph();
   for (Int_t i=0;i!=200;i++){
     //gtemp->SetPoint(i,h_sig_true->GetBinCenter(i+1)+t0,hsig->GetBinContent(2*i+1) + hsig->GetBinContent(2*i+2));
-    h_sig_true->SetBinContent(i+1, hsig->GetBinContent(5*i+1) + hsig->GetBinContent(5*i+2) + hsig->GetBinContent(5*i+3) + hsig->GetBinContent(5*i+4) + hsig->GetBinContent(5*i+5) );
+    h_sig_true->SetBinContent(i+1, (hsig->GetBinContent(5*i+1) + hsig->GetBinContent(5*i+2) + hsig->GetBinContent(5*i+3) + hsig->GetBinContent(5*i+4) + hsig->GetBinContent(5*i+5)) );
     //h_sig_true->SetBinContent(i+1, hsig->GetBinContent(i+1)  );
   }
   //for (Int_t i=0;i!=200;i++){
@@ -166,18 +186,19 @@ int main(int argc, char* argv[])
   //    h_sig_true->SetBinContent(i+1,gtemp->Eval(h_sig_true->GetBinCenter(i+1)));
   // }
   
-  
-  
+    
   // L1 fitting ...
-  TH1F *h_sig = new TH1F("h_sig","h_sig",250,0,25); // 100 ps
+  TH1F *h_sig = new TH1F("h_sig","h_sig",nbin,0,25); // 100 ps
 
-  l1_fit(h_nois, g_ele, h_sig, gain + 1, h_sig_true);
+  l1_fit(h_nois, g_ele, h_sig, (gain + 1), h_sig_true);
   //l1_fit(h_nois, g_signal_conv, h_sig, gain + 1);
-  
 
+  //std::cout << h_sig->GetSum() << std::endl;
+  
+  double reco_t0 = detect_t0(h_sig,480/6241./5.*3. *(gain+1) );
 
   
-  TFile *file = new TFile("output.root","RECREATE");
+  TFile *file = new TFile(Form("./out_files/output_%d.root",seed),"RECREATE");
   h_nois->SetDirectory(file);
   h_tot->SetDirectory(file);
   h_sig->SetDirectory(file);
@@ -190,6 +211,18 @@ int main(int argc, char* argv[])
 
   g_ele->Write("g_ele");
   g_signal_conv->Write("g_signal");
+
+  TTree *T = new TTree("T","T");
+  T->SetDirectory(file);
+  T->Branch("flag_noise",&flag_noise,"flag_noise/I");
+  T->Branch("flag_fluct",&flag_fluct,"flag_fluct/I");
+  T->Branch("gain",&gain,"gain/D");
+  T->Branch("t0",&t0,"t0/D");
+  T->Branch("reco_t0",&reco_t0,"reco_t0/D");
+  T->Branch("seed",&seed,"seed/I");
+  T->Branch("norm",&norm,"norm/D");
+  T->Branch("nbin",&nbin,"nbin/I");
+  T->Fill();
   
   //h2->SetDirectory(file);
   file->Write();

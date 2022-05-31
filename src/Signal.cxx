@@ -12,6 +12,69 @@
 
 using namespace Eigen;
 
+double WCPPIONEER::detect_t0(TH1F *h_sig, double threshold){
+  double t0 = -1;
+
+  int start_bin, max_bin, end_bin;
+  std::vector<std::tuple<int, int, int, int> > identified_hits;
+
+  for (Int_t i=0;i<h_sig->GetNbinsX();i++){
+    double content = h_sig->GetBinContent(i+1);
+    if (content > threshold){
+      max_bin = i;
+      start_bin = i;
+      bool flag_continue = true;
+      while(flag_continue){
+	if (start_bin - 1 >= 0 ){
+	  if (h_sig->GetBinContent(start_bin) > threshold * 0.1){
+	    start_bin --;
+	  }else{
+	    flag_continue = false;
+	  }
+	}else
+	  flag_continue = false;
+      }
+      for (end_bin = i; end_bin < h_sig->GetNbinsX(); end_bin++){
+	if (h_sig->GetBinContent(end_bin+1) > h_sig->GetBinContent(max_bin+1))
+	  max_bin = end_bin;
+	if (h_sig->GetBinContent(end_bin+1) < threshold * 0.1)
+	  break;
+      }
+
+      double sum = 0;
+      for (int j= start_bin; j<= end_bin;j++){
+	sum += h_sig->GetBinContent(j+1);
+      }
+
+      //std::cout << sum << std::endl;
+
+      if (sum > threshold*10.)
+	identified_hits.push_back(std::make_tuple(start_bin, max_bin, end_bin, sum));
+      //std::cout << start_bin << " " << max_bin << " " << end_bin << " " << sum << std::endl;
+      
+      i = end_bin +1;
+    }
+  }
+
+  if (identified_hits.size()>0){
+    double max = 0;
+    for (size_t i=0;i!=identified_hits.size();i++){
+      if (std::get<3>(identified_hits.at(i)) > max){
+	max = std::get<3>(identified_hits.at(i));
+	t0 = h_sig->GetBinCenter(std::get<0>(identified_hits.at(i))+1);
+      }
+    }
+    //    t0 = h_sig->GetBinCenter(std::get<0>(identified_hits.front())+1);
+  }
+
+  //  std::cout << threshold << " " << t0 << " " << identified_hits.size() << std::endl;
+
+  // std::cout << identified_hits.size() << std::endl;
+  
+  return t0;
+}
+
+
 void WCPPIONEER::l1_fit(TH1F *h_nois, TGraph *g_resp, TH1F *h_sig, double gain, TH1F *h_sig_true){
   const int nbin = h_sig->GetNbinsX();
   double t_min = h_sig->GetBinCenter(1);
@@ -172,14 +235,13 @@ void WCPPIONEER::l1_fit(TH1F *h_nois, TGraph *g_resp, TH1F *h_sig, double gain, 
   VectorXd beta_true = beta;
   
   for (int i=0;i!=nbin;i++){
-    
     // std::cout << beta(i) << std::endl;
     h_sig->SetBinContent(i+1,beta(i) * gain * 200./6241.);
     beta_true(i) = h_sig_true->GetBinContent(i+1)/gain/200.*6241.;
   }
 
+  
   VectorXd Wpp = G * beta_true;
-
   for (Int_t i=0;i!=nbin_fit;i++){
     //    std::cout << i << " " << vals_yth.at(i) << " " << W(i) << " " << Wp(i)  << " " << Wpp(i) << std::endl;
   }
