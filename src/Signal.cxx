@@ -12,6 +12,68 @@
 
 using namespace Eigen;
 
+
+void WCPPIONEER::decon_wf(TH1F *h_nois, TGraph *g_ele, TF1 *filter, TH1F *h_decon){
+  const Int_t nbin = h_decon->GetNbinsX();
+  int nbin_orig = h_nois->GetNbinsX();
+
+  std::cout << nbin << " " << nbin_orig << std::endl;
+  
+  TH1 *hr = h_nois->FFT(0,"MAG");
+  TH1 *hp = h_nois->FFT(0,"PH");
+
+  TH1F *h_ele = (TH1F*)h_nois->Clone("h_ele");
+  h_ele->Reset();
+  for (Int_t i=0;i!=h_ele->GetNbinsX();i++){
+    double time = h_ele->GetBinCenter(i+1);
+    if (time < 20)
+      h_ele->SetBinContent(i+1,g_ele->Eval(time));
+    else
+      h_ele->SetBinContent(i+1,0);
+  }
+  TH1 *h_ele_r = h_ele->FFT(0,"MAG");
+  TH1 *h_ele_p = h_ele->FFT(0,"PH");
+
+  double value_re[nbin];
+  double value_im[nbin];
+  for (Int_t i=0;i!=nbin;i++){
+    double freq = 2./nbin*i;
+    if (i>nbin/2.) freq = 2./nbin * (nbin-i);
+    double flt = filter->Eval(freq);
+
+    // special filter ...
+    flt = 1.0;
+    if (freq > 0.75) flt = 0;
+    
+    if (freq <=1. && i <= nbin_orig/2.){
+      double amp = hr->GetBinContent(i+1) / h_ele_r->GetBinContent(i+1)* flt;
+      double ph = hp->GetBinContent(i+1) - h_ele_p->GetBinContent(i+1);
+      value_re[i] = amp*cos(ph)/nbin;
+      value_im[i] = amp*sin(ph)/nbin;
+    }else{
+      value_re[i] = 0;
+      value_im[i] = 0.;
+    }
+  }
+  Int_t n = nbin;
+  TVirtualFFT *ifft = TVirtualFFT::FFT(1,&n,"C2R M K");
+  ifft->SetPointsComplex(value_re,value_im);
+  ifft->Transform();
+  TH1 *fb = TH1::TransformHisto(ifft,0,"Re");
+
+  for (Int_t i=0;i!=nbin;i++){
+    h_decon->SetBinContent(i+1,fb->GetBinContent(i+1));
+  }
+
+  delete ifft;
+  delete fb;
+  delete hr;
+  delete hp;
+  delete h_ele_r;
+  delete h_ele_p;
+  
+}
+
 double WCPPIONEER::detect_t0(TH1F *h_sig, double threshold){
   double t0 = -1;
 
@@ -320,7 +382,7 @@ void WCPPIONEER::interpolate(std::vector<double>& vals_x, std::vector<double>& v
 }
 
 
-void WCPPIONEER::cal_track(double x_start, double x_end, double scale, double gain, TH1F *h_tot, TH1F* he, TH1F *hh, TH1F *hge, TH1F *hgh, int flag_random , double x_cathode){
+void WCPPIONEER::cal_track(double x_start, double x_end, double scale, double gain, TH1F *h_tot, TH1F* he, TH1F *hh, TH1F *hge, TH1F *hgh, int flag_random , double x_cathode, double dt){
   
 
   TH1F *he1 = (TH1F*)he->Clone("he1");
@@ -350,10 +412,18 @@ void WCPPIONEER::cal_track(double x_start, double x_end, double scale, double ga
     hgh->Add(hgh1,1);
   }
 
-  h_tot->Add(he,1);
-  h_tot->Add(hh,1);
-  h_tot->Add(hgh,1);
-  h_tot->Add(hge,1);
+  int nbin = dt/he1->GetBinWidth(1);
+  // std::cout << nbin << " " << dt << " " << he1->GetBinWidth(1) << std::endl;
+
+  for (Int_t i=0;i!=h_tot->GetNbinsX();i++){
+    if (i+nbin < h_tot->GetNbinsX())
+      h_tot->SetBinContent(i+nbin+1,he->GetBinContent(i+1) + hh->GetBinContent(i+1) + hgh->GetBinContent(i+1) + hge->GetBinContent(i+1));
+  }
+  
+  //  h_tot->Add(he,1);
+  // h_tot->Add(hh,1);
+  //h_tot->Add(hgh,1);
+  //h_tot->Add(hge,1);
   
   delete he1;
   delete hh1;

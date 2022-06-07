@@ -18,8 +18,8 @@ void WCPPIONEER::Calculate_Electronic_Noise(TH1F *h_nois, TGraph *g_noise){
     //double r = gRandom->Gaus(0,g2->Eval(freq)
     //value_re[i] = 62.6*sqrt(2.)*cos(phi)/nbin;
     //value_im[i] = 62.6*sqrt(2.)*sin(phi)/nbin;
-    value_re[i] = gRandom->Gaus(0,g_noise->Eval(freq))/nbin;
-    value_im[i] = gRandom->Gaus(0,g_noise->Eval(freq))/nbin;
+    value_re[i] = gRandom->Gaus(0,g_noise->Eval(freq) * sqrt(nbin/1024.))/nbin;
+    value_im[i] = gRandom->Gaus(0,g_noise->Eval(freq) * sqrt(nbin/1024.))/nbin;
   }
 
   

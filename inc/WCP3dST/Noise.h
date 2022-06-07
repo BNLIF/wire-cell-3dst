@@ -6,6 +6,7 @@
 
 namespace WCPPIONEER{
   void Calculate_Electronic_Noise(TH1F *h_nois, TGraph *g_noise);
+
 }
 
 #endif
