@@ -37,9 +37,9 @@ void WCPPIONEER::decon_wf(TH1F *h_nois, TGraph *g_ele, TF1 *filter, TH1F *h_deco
   double value_re[nbin];
   double value_im[nbin];
   for (Int_t i=0;i!=nbin;i++){
-    double freq = 2./nbin*i;
+    double freq = 2./nbin*i ;
     if (i>nbin/2.) freq = 2./nbin * (nbin-i);
-    double flt = filter->Eval(freq);
+    double flt = filter->Eval(freq* nbin/nbin_orig);
 
     // special filter ...
     flt = 1.0;
@@ -78,7 +78,7 @@ double WCPPIONEER::detect_t0(TH1F *h_sig, double threshold){
   double t0 = -1;
 
   int start_bin, max_bin, end_bin;
-  std::vector<std::tuple<int, int, int, int> > identified_hits;
+  std::vector<std::tuple<int, int, int, double> > identified_hits;
 
   for (Int_t i=0;i<h_sig->GetNbinsX();i++){
     double content = h_sig->GetBinContent(i+1);
@@ -110,9 +110,10 @@ double WCPPIONEER::detect_t0(TH1F *h_sig, double threshold){
 
       //std::cout << sum << std::endl;
 
-      if (sum > threshold*10.)
+      if (sum > threshold*10.){
 	identified_hits.push_back(std::make_tuple(start_bin, max_bin, end_bin, sum));
-      //std::cout << start_bin << " " << max_bin << " " << end_bin << " " << sum << std::endl;
+	//std::cout << start_bin << " " << max_bin << " " << end_bin << " " << sum << " " << 10*threshold << std::endl;
+      }
       
       i = end_bin +1;
     }
@@ -121,6 +122,7 @@ double WCPPIONEER::detect_t0(TH1F *h_sig, double threshold){
   if (identified_hits.size()>0){
     double max = 0;
     for (size_t i=0;i!=identified_hits.size();i++){
+      //      std::cout << max << " " << std::get<3>(identified_hits.at(i)) << std::endl;
       if (std::get<3>(identified_hits.at(i)) > max){
 	max = std::get<3>(identified_hits.at(i));
 	t0 = h_sig->GetBinCenter(std::get<0>(identified_hits.at(i))+1);
