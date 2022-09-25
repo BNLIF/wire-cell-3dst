@@ -80,9 +80,15 @@ double WCPPIONEER::detect_t0(TH1F *h_sig, double threshold){
   int start_bin, max_bin, end_bin;
   std::vector<std::tuple<int, int, int, double> > identified_hits;
 
+
+  
   for (Int_t i=0;i<h_sig->GetNbinsX();i++){
     double content = h_sig->GetBinContent(i+1);
+
+  
     if (content > threshold){
+      //std::cout <<i << " " << content<< " " << threshold << std::endl;
+      
       max_bin = i;
       start_bin = i;
       bool flag_continue = true;
@@ -108,7 +114,7 @@ double WCPPIONEER::detect_t0(TH1F *h_sig, double threshold){
 	sum += h_sig->GetBinContent(j+1);
       }
 
-      //std::cout << sum << std::endl;
+      //      std::cout << sum << std::endl;
 
       if (sum > threshold*10.){
 	identified_hits.push_back(std::make_tuple(start_bin, max_bin, end_bin, sum));
@@ -248,7 +254,7 @@ void WCPPIONEER::l1_fit(TH1F *h_nois, TGraph *g_resp, TH1F *h_sig, double gain, 
       //std::cout << i << " " << indices[i] << std::endl;
     }
     
-    double error = sqrt(2.8*2.8+ pow(vals_y.at(i)*0.02,2)); // 2% uncertainty ...
+    double error = sqrt(2.8*2.8+ pow(vals_y.at(i)*0.005,2)); // 0.5% uncertainty ...
     
     W(i) = vals_y.at(i) / error / gain / scale;
     double t1 = vals_x.at(i);
