@@ -42,8 +42,8 @@ void WCPPIONEER::decon_wf(TH1F *h_nois, TGraph *g_ele, TF1 *filter, TH1F *h_deco
     double flt = filter->Eval(freq* nbin/nbin_orig);
 
     // special filter ...
-    flt = 1.0;
-    if (freq > 0.75) flt = 0;
+    // flt = 1.0;
+    //if (freq > 0.5) flt = 0;
     
     if (freq <=1. && i <= nbin_orig/2.){
       double amp = hr->GetBinContent(i+1) / h_ele_r->GetBinContent(i+1)* flt;

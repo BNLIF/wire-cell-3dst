@@ -120,7 +120,7 @@ int main(int argc, char* argv[])
   filter_gauss->SetParameter(0,16);
   TF1 *filter_wiener = new TF1("wiener","exp(-[0]*pow(x,[1]))",0,5);
   filter_wiener->SetParameter(0,1588.);
-  filter_wiener->SetParameter(1,11.80);
+  filter_wiener->SetParameter(1,15.80);
 
   
   
@@ -253,7 +253,7 @@ int main(int argc, char* argv[])
     h_nois->SetBinContent(i+1, h_nois->GetBinContent(i+1) + content);
   }
 
-  decon_wf(h_nois,g_ele,filter_gauss,h_decon);
+  decon_wf(h_nois,g_ele,filter_wiener,h_decon);
 
   std::cout << h_decon->GetNbinsX() << std::endl;
   
