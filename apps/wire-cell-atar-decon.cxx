@@ -253,7 +253,8 @@ int main(int argc, char* argv[])
     h_nois->SetBinContent(i+1, h_nois->GetBinContent(i+1) + content);
   }
 
-  decon_wf(h_nois,g_ele,filter_wiener,h_decon);
+  decon_wf(h_nois,g_ele,filter_gauss,h_decon);
+  //  decon_wf(h_nois,g_ele,filter_wiener,h_decon);
 
   std::cout << h_decon->GetNbinsX() << std::endl;
   
