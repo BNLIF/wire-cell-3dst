@@ -283,14 +283,20 @@ int main(int argc, char* argv[])
   
     
   // L1 fitting ...
-  TH1F *h_sig = new TH1F("h_sig","h_sig",nbin,0,25); // 100 ps
+  TH1F *h_sig = new TH1F("h_sig","h_sig",nbin,0,40); // 100 ps
 
   l1_fit(h_nois, g_ele, h_sig, (gain + 1), h_sig_true);
   //l1_fit(h_nois, g_signal_conv, h_sig, gain + 1);
-
   //std::cout << h_sig->GetSum() << std::endl;
+
+
+  // hit reconstruction
+  hit_reco(h_sig, 480/6241./5.*1.7 *(gain+1), h_decon, h_sig_true);
+
   
-  //  double reco_t0 = detect_t0(h_sig,480/6241./5.*3. *(gain+1) );
+  // std::vector<std::tuple<int, int, int, double> > identified_hits;
+  // double reco_t0 = detect_t0(h_sig,480/6241./5.*1.7 *(gain+1) , identified_hits);
+
   double reco_t0;
   
   TFile *file = new TFile(Form("./out_files/output_%d.root",seed),"RECREATE");

@@ -236,8 +236,10 @@ int main(int argc, char* argv[])
   //l1_fit(h_nois, g_signal_conv, h_sig, gain + 1);
 
   //std::cout << h_sig->GetSum() << std::endl;
+
+  std::vector<std::tuple<int, int, int, double> > identified_hits;
   
-  double reco_t0 = detect_t0(h_sig,480/6241./5.*1.7 *(gain+1) );
+  double reco_t0 = detect_t0(h_sig,480/6241./5.*1.7 *(gain+1), identified_hits );
 
   
   TFile *file = new TFile(Form("./out_files/output_%d.root",seed),"RECREATE");

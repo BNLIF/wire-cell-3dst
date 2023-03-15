@@ -74,11 +74,43 @@ void WCPPIONEER::decon_wf(TH1F *h_nois, TGraph *g_ele, TF1 *filter, TH1F *h_deco
   
 }
 
-double WCPPIONEER::detect_t0(TH1F *h_sig, double threshold){
+
+void WCPPIONEER::hit_reco(TH1F *h_sig, double threshold, TH1F *h_decon, TH1F *h_sig_true){
+
+  // start bin, max bin, end bin, sum of charge
+  std::vector<std::tuple<int, int, int, double> > identified_hits;
+  detect_t0(h_sig, threshold, identified_hits);
+
+  for (auto it = identified_hits.begin(); it!= identified_hits.end(); it++){
+    std::cout << "Reco: " << std::get<0>(*it) << " " << std::get<1>(*it) << " " << std::get<2>(*it) << " " << std::get<3>(*it) << std::endl;
+  }
+  
+  std::vector<std::tuple<int, int, int, double> > identified_true_hits;
+  detect_t0(h_sig_true, threshold, identified_true_hits);
+
+  for (auto it = identified_true_hits.begin(); it!= identified_true_hits.end(); it++){
+    std::cout << "True: " << std::get<0>(*it) << " " << std::get<1>(*it) << " " << std::get<2>(*it) << " " << std::get<3>(*it) << std::endl;
+  }
+
+  // fit charge code in h_decon ...
+  // height, sigma, mean, integral
+  std::vector<std::tuple<double, double, double, double > > fitted_hits;
+  gauss_fit(h_decon, threshold, identified_hits, fitted_hits);
+  
+}
+
+void WCPPIONEER::gauss_fit(TH1F *h_decon, double threshold, std::vector<std::tuple<int, int, int, double> > &identified_hits, std::vector<std::tuple<double, double, double, double > > &fitted_hits){
+
+
+}
+
+
+
+double WCPPIONEER::detect_t0(TH1F *h_sig, double threshold,   std::vector<std::tuple<int, int, int, double> > &identified_hits){
   double t0 = -1;
 
   int start_bin, max_bin, end_bin;
-  std::vector<std::tuple<int, int, int, double> > identified_hits;
+
 
 
   

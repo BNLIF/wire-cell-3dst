@@ -12,13 +12,13 @@ int main(int argc, char* argv[])
 
   TF1 *f1 = new TF1("f1","gaus",0,10);
   Double_t par[3];
-  par[0] = 50;
+  par[0] = 5;
   par[1] = 3;
   par[2] = 1;
   f1->SetParameters(par);
 
   TF1 *f2 = new TF1("f2","gaus",0,10);
-  par[0] = 5;
+  par[0] = 0.5;
   par[1] = 7;
   par[2] = 1;
   f2->SetParameters(par);
@@ -35,11 +35,11 @@ int main(int argc, char* argv[])
   const int nData = 1000;
   const int nParam = 6;
 
-  float p[6]={50,310,95,5,690,105};
+  float p[6]={30,310,95,25,690,105};
   //  float perr[6]={0.1,0.1,0.1,0.1,0.1,0.1};
   float plimmin[6] = {0,290,90,0,680,90};
   float plimmax[6] = {100,315,110,100,710,120};
-  float lambda = 0.0001;
+  float lambda = -1;//0.001;
   float chiSqr;
   float dchiSqr;
 
