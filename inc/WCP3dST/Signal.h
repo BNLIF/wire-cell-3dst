@@ -19,9 +19,9 @@ namespace WCPPIONEER{
   void interpolate(std::vector<double>& vals_x, std::vector<double>& vals_y, double bin_width);
 
 
-  void hit_reco(TH1F *h_sig, double threshold, TH1F *h_decon, TH1F *h_sig_true);
+  void hit_reco(TH1F *h_sig, double threshold, double filter_width, TH1F *h_decon, TH1F *h_sig_true,  std::vector<std::tuple<double, double, double, double, double, double, double > >& fitted_hits);
 
-  void gauss_fit(TH1F *h_decon, double threshold, std::vector<std::tuple<int, int, int, double> > &identified_hits, std::vector<std::tuple<double, double, double, double > > &fitted_hits);
+  void gauss_fit(TH1F *h_decon, double threshold, double filter_width, std::vector<std::tuple<int, int, int, double> > &identified_hits, std::vector<std::tuple<double, double, double, double, double, double, double > > &fitted_hits);
   
 }
 

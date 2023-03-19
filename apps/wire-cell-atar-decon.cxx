@@ -117,7 +117,8 @@ int main(int argc, char* argv[])
   TF1 *filter_gauss = new TF1("gauss","exp(-[0]*x*x)",0,5);
   // filter_gauss->SetParameter(0,4.);
   //  filter_gauss->SetParameter(0,0.01);
-  filter_gauss->SetParameter(0,16);
+  double filter_width = 16;
+  filter_gauss->SetParameter(0,filter_width);
   TF1 *filter_wiener = new TF1("wiener","exp(-[0]*pow(x,[1]))",0,5);
   filter_wiener->SetParameter(0,1588.);
   filter_wiener->SetParameter(1,15.80);
@@ -291,7 +292,8 @@ int main(int argc, char* argv[])
 
 
   // hit reconstruction
-  hit_reco(h_sig, 480/6241./5.*1.7 *(gain+1), h_decon, h_sig_true);
+  std::vector<std::tuple<double, double, double, double, double, double, double > > fitted_hits;
+  hit_reco(h_sig, 480/6241./5.*1.7 *(gain+1), filter_width, h_decon, h_sig_true, fitted_hits);
 
   
   // std::vector<std::tuple<int, int, int, double> > identified_hits;
@@ -328,6 +330,37 @@ int main(int argc, char* argv[])
   T->Branch("norm",&norm,"norm/D");
   T->Branch("nbin",&nbin,"nbin/I");
   T->Branch("noise",sum,"noise[73]/D");
+  // reco hits ...
+  Int_t nhits=0;
+  Double_t reco_hit_height[100];
+  Double_t reco_hit_sigma[100];
+  Double_t reco_hit_mean[100];
+  Double_t reco_hit_integral[100];
+  Double_t reco_hit_lambda[100];
+  Double_t reco_hit_chi2[100];
+  Double_t reco_hit_dchi2[100];
+  T->Branch("reco_nhits",&nhits,"reco_nhits/I");
+  T->Branch("reco_hit_height",reco_hit_height,"reco_hit_height[reco_nhits]/D");
+  T->Branch("reco_hit_sigma",reco_hit_sigma,"reco_hit_sigma[reco_nhits]/D");
+  T->Branch("reco_hit_mean",reco_hit_mean,"reco_hit_mean[reco_nhits]/D");
+  T->Branch("reco_hit_integral",reco_hit_integral,"reco_hit_integral[reco_nhits]/D");
+  T->Branch("reco_hit_lambda",reco_hit_lambda,"reco_hit_lambda[reco_nhits]/D");
+  T->Branch("reco_hit_chi2",reco_hit_chi2,"reco_hit_chi2[reco_nhits]/D");
+  T->Branch("reco_hit_dchi2",reco_hit_dchi2,"reco_hit_dchi2[reco_nhits]/D");
+
+  for (auto it =  fitted_hits.begin(); it!= fitted_hits.end(); it++){
+    reco_hit_height[nhits] = std::get<0>(*it);
+    reco_hit_sigma[nhits] = std::get<2>(*it);
+    reco_hit_mean[nhits] = std::get<1>(*it);
+    reco_hit_integral[nhits] = std::get<3>(*it);
+    reco_hit_lambda[nhits] = std::get<4>(*it);
+    reco_hit_chi2[nhits] = std::get<5>(*it);
+    reco_hit_dchi2[nhits] = std::get<6>(*it);
+    
+    nhits ++;
+  }
+  
+  
   T->Fill();
   
   //h2->SetDirectory(file);

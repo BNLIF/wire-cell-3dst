@@ -2,6 +2,8 @@
 #include "TRandom.h"
 #include "WCPRess/LassoModel.h"
 #include "WCPRess/ElasticNetModel.h"
+#include "WCPRess/MarqFitAlg.h"
+
 #include <Eigen/Dense>
 #include <TVirtualFFT.h>
 #include <TFile.h>
@@ -17,7 +19,7 @@ void WCPPIONEER::decon_wf(TH1F *h_nois, TGraph *g_ele, TF1 *filter, TH1F *h_deco
   const Int_t nbin = h_decon->GetNbinsX();
   int nbin_orig = h_nois->GetNbinsX();
 
-  std::cout << nbin << " " << nbin_orig << std::endl;
+  //  std::cout << nbin << " " << nbin_orig << std::endl;
   
   TH1 *hr = h_nois->FFT(0,"MAG");
   TH1 *hp = h_nois->FFT(0,"PH");
@@ -75,7 +77,7 @@ void WCPPIONEER::decon_wf(TH1F *h_nois, TGraph *g_ele, TF1 *filter, TH1F *h_deco
 }
 
 
-void WCPPIONEER::hit_reco(TH1F *h_sig, double threshold, TH1F *h_decon, TH1F *h_sig_true){
+void WCPPIONEER::hit_reco(TH1F *h_sig, double threshold, double filter_width, TH1F *h_decon, TH1F *h_sig_true,  std::vector<std::tuple<double, double, double, double, double, double, double > >& fitted_hits){
 
   // start bin, max bin, end bin, sum of charge
   std::vector<std::tuple<int, int, int, double> > identified_hits;
@@ -93,14 +95,144 @@ void WCPPIONEER::hit_reco(TH1F *h_sig, double threshold, TH1F *h_decon, TH1F *h_
   }
 
   // fit charge code in h_decon ...
-  // height, sigma, mean, integral
-  std::vector<std::tuple<double, double, double, double > > fitted_hits;
-  gauss_fit(h_decon, threshold, identified_hits, fitted_hits);
+  // height, sigma, mean, integral, lambda, chi2, dchi2
+  // std::vector<std::tuple<double, double, double, double, double, double, double > > fitted_hits;
+  gauss_fit(h_decon, threshold, filter_width, identified_hits, fitted_hits);
   
 }
 
-void WCPPIONEER::gauss_fit(TH1F *h_decon, double threshold, std::vector<std::tuple<int, int, int, double> > &identified_hits, std::vector<std::tuple<double, double, double, double > > &fitted_hits){
+void WCPPIONEER::gauss_fit(TH1F *h_decon, double threshold, double filter_width, std::vector<std::tuple<int, int, int, double> > &identified_hits, std::vector<std::tuple<double, double, double, double, double, double, double > > &fitted_hits){
 
+  double width = h_decon->GetBinWidth(1);
+  //  std::cout << width << std::endl;
+  
+  // first step ... find fitting ranges ...
+  std::vector<std::pair<int, int> > fitting_ranges;
+
+  //threshold *= 3;
+
+  double time_width = sqrt(pow(sqrt(filter_width/2.)/3.1415926/width,2) + pow(1.5/sqrt(12.)/width,2));
+
+  //  std::cout << time_width << std::endl;
+  double time_width_low = sqrt(filter_width/2.)/3.1415926/width * 0.8;
+  double time_width_high = sqrt(pow(sqrt(filter_width/2.)/3.1415926/width,2) + pow(1.5/sqrt(12.)/width*1.2,2));
+  
+  
+  
+  int max_bin, start_bin, end_bin;
+  for (Int_t i=0;i<h_decon->GetNbinsX();i++){
+    double content = h_decon->GetBinContent(i+1);
+    
+    if (content > threshold){
+      //std::cout <<i << " " << content<< " " << threshold << std::endl;
+      //      max_bin = i;
+      start_bin = i;
+      bool flag_continue = true;
+      while(flag_continue){
+	if (start_bin - 1 >= 0 ){
+	  if (h_decon->GetBinContent(start_bin) > threshold * 0.3){
+	    start_bin --;
+	  }else{
+	    flag_continue = false;
+	  }
+	}else
+	  flag_continue = false;
+      }
+      for (end_bin = i; end_bin < h_decon->GetNbinsX(); end_bin++){
+	//	if (h_decon->GetBinContent(end_bin+1) > h_decon->GetBinContent(max_bin+1))
+	//  max_bin = end_bin;
+	if (h_decon->GetBinContent(end_bin+1) < threshold * 0.3)
+	  break;
+      }
+
+      
+      start_bin -= 10;
+      end_bin += 10;
+      if (start_bin < 0) start_bin = 0;
+      if (end_bin >= h_decon->GetNbinsX()) end_bin = h_decon->GetNbinsX() -1;
+      
+      //  std::cout << start_bin << " " << end_bin << std::endl;
+      
+      if (fitting_ranges.size()==0)
+	fitting_ranges.push_back(std::make_pair(start_bin, end_bin));
+      else{
+	if (start_bin <= fitting_ranges.back().second)
+	  fitting_ranges.back().second = end_bin;
+      }
+      
+      i = end_bin +1;
+    }
+
+    
+  }
+  
+  //std::cout << fitting_ranges.size() << " " << fitting_ranges.back().first << " " << fitting_ranges.back().second << std::endl;
+
+
+  gshf::MarqFitAlg *fitter;
+  for (auto it = fitting_ranges.begin(); it != fitting_ranges.end(); it++){
+
+    //    std::cout << it->first << " " << it->second << " " << std::endl;
+
+    float p[60],plimmin[60], plimmax[60];
+    float lambda  = 0.001;//-1;
+    float chiSqr;
+    float dchiSqr;
+
+    int ncount = 0;
+    int nData = it->second - it->first + 1;
+    float y[1000];
+    for (int i=it->first; i!=it->second+1;i++){
+      y[i-it->first] = h_decon->GetBinContent(i+1) ;
+      //      std::cout << i-it->first << " " << y[i-it->first] << std::endl;
+    }
+    
+    for (auto it1 = identified_hits.begin(); it1!= identified_hits.end(); it1++){
+      // identified the initial parameters based on identified_hits
+
+      double peak_time = std::get<1>(*it1) + 1.4/2./width;
+      double area = std::get<3>(*it1);
+      double peak_height  =  area/time_width/sqrt(2.*3.1415926);
+
+      p[3*ncount+0] = peak_height; p[3*ncount + 1] = peak_time-it->first ; p[3*ncount + 2] = time_width;
+      plimmin[3*ncount + 0] = 0; plimmin[3*ncount+1] = peak_time -1/width -it->first ; plimmin[3*ncount+2] = time_width_low;
+      plimmax[3*ncount + 0] = peak_height*10; plimmax[3*ncount+1] = peak_time +1/width -it->first ; plimmax[3*ncount+2] = time_width_high;
+
+      
+      //      std::cout << peak_time << " " << time_width/10. << " " << area/time_width/sqrt(2.*3.1415926) << std::endl;
+      //      std::cout << std::get<0>(*it1) << " " << " " << std::get<1>(*it1) << " " << std::get<2>(*it1) << " " << std::get<3>(*it1) << std::endl;
+      ncount ++;
+    }
+
+    // std::cout << "Before: ";
+    // for (Int_t i=0;i!=6;i++){
+    //   std::cout <<  p[i] << " " << plimmin[i] << "  "<< plimmax[i] << " " << std::endl;// << par[1] << " " << par[2] << std::endl;
+    // }
+    // std::cout << std::endl;
+    
+    int nParam = 3*ncount;
+    fitter->mrqdtfit(lambda, p, plimmin, plimmax, y, nParam, nData, chiSqr, dchiSqr);
+    //fitter->mrqdtfit(lambda, p, y, nParam, nData, chiSqr, dchiSqr);
+
+    // std::cout << "After: ";
+    // for (Int_t i=0;i!=6;i++){
+    //   std::cout <<  p[i] << " ";// << par[1] << " " << par[2] << std::endl;
+    // }
+    // std::cout << std::endl;
+    // std::cout << nData << " " << nParam << " " << lambda << " " << chiSqr << " " << dchiSqr << std::endl;
+    
+    // do the fit(s) ...
+
+    // convert the fit parameters back to hit parameters and save ...
+
+    for (int i=0;i!=ncount;i++){
+      std::tuple<double, double, double, double, double, double, double> fit_hit = std::make_tuple(p[3*i+0], p[3*i+1]*width + (it->first) * width, p[3*i+2]*width, p[3*i+0]*sqrt(2.*3.1415926) * p[3*i+2], lambda, chiSqr, dchiSqr);
+
+      //std::cout << p[3*i+0]<< " " <<  p[3*i+1]*width << " " <<  p[3*i+2]*width << " " <<  p[3*i+0]*sqrt(2.*3.1415926) * p[3*i+2] << " " <<  lambda << " " <<  chiSqr << " " <<  dchiSqr << std::endl;
+      fitted_hits.push_back(fit_hit);
+    }
+    
+  }
 
 }
 
