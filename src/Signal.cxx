@@ -7,6 +7,7 @@
 #include <Eigen/Dense>
 #include <TVirtualFFT.h>
 #include <TFile.h>
+#include <TSpectrum.h>
 #include <iostream>
 
 #include <set>
@@ -175,7 +176,7 @@ void WCPPIONEER::gauss_fit(TH1F *h_decon, double threshold, double filter_width,
     //    std::cout << it->first << " " << it->second << " " << std::endl;
 
     float p[60],plimmin[60], plimmax[60];
-    float lambda  = 0.001;//-1;
+    float lambda  = 0.001;
     float chiSqr;
     float dchiSqr;
 
@@ -190,13 +191,26 @@ void WCPPIONEER::gauss_fit(TH1F *h_decon, double threshold, double filter_width,
     for (auto it1 = identified_hits.begin(); it1!= identified_hits.end(); it1++){
       // identified the initial parameters based on identified_hits
 
-      double peak_time = std::get<1>(*it1) + 1.4/2./width;
+      double peak_time = std::get<1>(*it1);// + 1.4/2./width;
+
+      double max = 0;
+      double max_bin = peak_time;
+      for (int bin = peak_time - 1/width; bin != peak_time + 1/width; bin++){
+	double content = h_decon->GetBinContent(bin+1);
+	if (content > max){
+	  max = content;
+	  max_bin = bin;
+	}
+      }
+      //std::cout << peak_time << " " << max_bin << std::endl;
+      peak_time = max_bin;
+      
       double area = std::get<3>(*it1);
       double peak_height  =  area/time_width/sqrt(2.*3.1415926);
 
       p[3*ncount+0] = peak_height; p[3*ncount + 1] = peak_time-it->first ; p[3*ncount + 2] = time_width;
-      plimmin[3*ncount + 0] = 0; plimmin[3*ncount+1] = peak_time -1/width -it->first ; plimmin[3*ncount+2] = time_width_low;
-      plimmax[3*ncount + 0] = peak_height*10; plimmax[3*ncount+1] = peak_time +1/width -it->first ; plimmax[3*ncount+2] = time_width_high;
+      plimmin[3*ncount + 0] = peak_height * 0.5; plimmin[3*ncount+1] = peak_time -1/width -it->first ; plimmin[3*ncount+2] = time_width_low;
+      plimmax[3*ncount + 0] = peak_height*2; plimmax[3*ncount+1] = peak_time +1/width -it->first ; plimmax[3*ncount+2] = time_width_high;
 
       
       //      std::cout << peak_time << " " << time_width/10. << " " << area/time_width/sqrt(2.*3.1415926) << std::endl;
@@ -204,18 +218,21 @@ void WCPPIONEER::gauss_fit(TH1F *h_decon, double threshold, double filter_width,
       ncount ++;
     }
 
+    int nParam = 3*ncount;
+    
+    // std::cout << it->first << std::endl;
     // std::cout << "Before: ";
-    // for (Int_t i=0;i!=6;i++){
+    // for (Int_t i=0;i!=nParam;i++){
     //   std::cout <<  p[i] << " " << plimmin[i] << "  "<< plimmax[i] << " " << std::endl;// << par[1] << " " << par[2] << std::endl;
     // }
     // std::cout << std::endl;
     
-    int nParam = 3*ncount;
+    
     fitter->mrqdtfit(lambda, p, plimmin, plimmax, y, nParam, nData, chiSqr, dchiSqr);
     //fitter->mrqdtfit(lambda, p, y, nParam, nData, chiSqr, dchiSqr);
 
     // std::cout << "After: ";
-    // for (Int_t i=0;i!=6;i++){
+    // for (Int_t i=0;i!=nParam;i++){
     //   std::cout <<  p[i] << " ";// << par[1] << " " << par[2] << std::endl;
     // }
     // std::cout << std::endl;
@@ -228,7 +245,7 @@ void WCPPIONEER::gauss_fit(TH1F *h_decon, double threshold, double filter_width,
     for (int i=0;i!=ncount;i++){
       std::tuple<double, double, double, double, double, double, double> fit_hit = std::make_tuple(p[3*i+0], p[3*i+1]*width + (it->first) * width, p[3*i+2]*width, p[3*i+0]*sqrt(2.*3.1415926) * p[3*i+2], lambda, chiSqr, dchiSqr);
 
-      //std::cout << p[3*i+0]<< " " <<  p[3*i+1]*width << " " <<  p[3*i+2]*width << " " <<  p[3*i+0]*sqrt(2.*3.1415926) * p[3*i+2] << " " <<  lambda << " " <<  chiSqr << " " <<  dchiSqr << std::endl;
+      std::cout << p[3*i+0]<< " " <<  p[3*i+1]*width << " " <<  p[3*i+2]*width << " " <<  p[3*i+0]*sqrt(2.*3.1415926) * p[3*i+2] << " " <<  lambda << " " <<  chiSqr << " " <<  dchiSqr << std::endl;
       fitted_hits.push_back(fit_hit);
     }
     
@@ -242,13 +259,14 @@ double WCPPIONEER::detect_t0(TH1F *h_sig, double threshold,   std::vector<std::t
   double t0 = -1;
 
   int start_bin, max_bin, end_bin;
+  double width = h_sig->GetBinWidth(1);
+  int begin = 0;
+  int end = h_sig->GetNbinsX()-1;
 
 
-
-  
+  std::vector<std::tuple<int, int, int, double, int> > temp_hits;
   for (Int_t i=0;i<h_sig->GetNbinsX();i++){
     double content = h_sig->GetBinContent(i+1);
-
   
     if (content > threshold){
       //std::cout <<i << " " << content<< " " << threshold << std::endl;
@@ -272,23 +290,172 @@ double WCPPIONEER::detect_t0(TH1F *h_sig, double threshold,   std::vector<std::t
 	if (h_sig->GetBinContent(end_bin+1) < threshold * 0.1)
 	  break;
       }
-
       double sum = 0;
       for (int j= start_bin; j<= end_bin;j++){
 	sum += h_sig->GetBinContent(j+1);
       }
 
-      //      std::cout << sum << std::endl;
-
       if (sum > threshold*10.){
-	identified_hits.push_back(std::make_tuple(start_bin, max_bin, end_bin, sum));
-	//std::cout << start_bin << " " << max_bin << " " << end_bin << " " << sum << " " << 10*threshold << std::endl;
-      }
-      
+	temp_hits.push_back(std::make_tuple(start_bin, max_bin, end_bin, sum,0));
+	//std::cout << start_bin << " kk " << max_bin << " " << end_bin << " " << sum << " " << 10*threshold << std::endl;
+      }      
       i = end_bin +1;
     }
   }
 
+
+
+  if (temp_hits.size() ==0) return t0;
+  
+ 
+  TSpectrum *s = new TSpectrum(100);
+  Int_t nfound = s->Search(h_sig,2,"nobackground new",threshold);
+
+
+  Int_t norder_peaks=0;
+  Int_t order_peak_pos[105];
+
+  //std::cout << nfound << std::endl;
+  if (nfound >0){
+    Int_t npeaks = s->GetNPeaks();
+    Double_t *peak_pos = s->GetPositionX();
+    Double_t *peak_height = s->GetPositionY();
+    
+    for (Int_t j=0;j!=npeaks;j++){
+      order_peak_pos[norder_peaks] = std::round((*(peak_pos+j)-h_sig->GetBinCenter(1))/width + 1);
+      bool flag_in = false;
+      for (auto it1 = temp_hits.begin(); it1!=temp_hits.end(); it1++){
+	if (order_peak_pos[norder_peaks] >= std::get<0>(*it1) && order_peak_pos[norder_peaks] <= std::get<2>(*it1)){
+	  std::get<4>(*it1) = 1;
+	  norder_peaks ++;
+	  break;
+	}
+      }
+      //std::cout << "peak: " << order_peak_pos[j] << " " << threshold << std::endl;
+    }
+    for (auto it1 = temp_hits.begin(); it1!=temp_hits.end(); it1++){
+      if (std::get<4>(*it1) == 0){
+	order_peak_pos[norder_peaks] = std::get<1>(*it1);
+	norder_peaks ++;
+      }
+    }
+    std::sort(order_peak_pos,order_peak_pos + norder_peaks);
+
+    //    for (int i=0; i!= norder_peaks; i++){
+    //  std::cout << i << " kk " << order_peak_pos[i] << std::endl;
+    // }
+    
+    
+    Float_t valley_pos[25];
+    valley_pos[0] = begin;
+    
+    for (Int_t j=0;j!=norder_peaks-1;j++){
+      Float_t min = 1e9;
+      for (Int_t k = order_peak_pos[j]-begin; k< order_peak_pos[j+1]-begin;k++){
+	if (h_sig->GetBinContent(k+1) < min){
+	  min = h_sig->GetBinContent(k+1);
+	  valley_pos[j+1] = k+begin;
+	}
+      }
+      //	std::cout << valley_pos[j+1] << std::endl;
+      //std::cout << *(peak_pos+j) << std::endl;
+    }
+    valley_pos[norder_peaks] = end;
+
+    std::vector<std::tuple<int, int, int> > temp1_hits;
+    
+    for (int i=0;i!=norder_peaks;i++){
+      //      std::cout << "peaks1: " << valley_pos[i] << " " << order_peak_pos[i] << " " << valley_pos[i+1] << std::endl;
+      int bin = order_peak_pos[i];
+      start_bin = bin-1;
+      end_bin = bin+1;
+      while (bin >= valley_pos[i]){
+	double content = h_sig->GetBinContent(bin+1);
+	if (content < threshold * 0.1)
+	  break;
+	else
+	  start_bin = bin;
+	bin --;
+      }
+      bin = order_peak_pos[i];
+      while ( bin <= valley_pos[i+1]){
+	double content = h_sig->GetBinContent(bin+1);
+	if (content < threshold * 0.1)
+	  break;
+	else
+	  end_bin = bin;
+	bin ++;
+      }
+      double max = 0;
+      for (int j=start_bin; j!= end_bin; j++){
+	if (h_sig->GetBinContent(j+1) > max){
+	  max = h_sig->GetBinContent(j+1);
+	  max_bin = j;
+	}
+	//      max_bin = order_peak_pos[i];
+
+      }
+      //      std::cout << start_bin << " " << max_bin << " " << end_bin << std::endl;
+
+      if (temp1_hits.size()==0){
+	temp1_hits.push_back(std::make_tuple(start_bin, max_bin, end_bin));
+      }else{
+	if (max_bin == std::get<2>(temp1_hits.back())){
+	  std::get<2>(temp1_hits.back()) = end_bin;
+	}else{
+	  temp1_hits.push_back(std::make_tuple(start_bin, max_bin, end_bin));
+	}
+      }
+    }
+
+    
+      // if (h_sig->GetBinContent(max_bin+1) < h_sig->GetBinContent(start_bin) ||
+      // 	  h_sig->GetBinContent(max_bin+1) < h_sig->GetBinContent(end_bin+2)){
+      // 	//	std::cout << "haha " << h_sig->GetBinContent(max_bin+1) << " " << h_sig->GetBinContent(start_bin) << " " << h_sig->GetBinContent(end_bin+2) <<  std::endl;
+      // }
+    for (auto it1 = temp1_hits.begin(); it1!= temp1_hits.end(); it1++){
+      start_bin = std::get<0>(*it1);
+      max_bin = std::get<1>(*it1);
+      end_bin = std::get<2>(*it1);
+      
+      if (end_bin - start_bin > 50){ // split to two ...
+	int mid_bin = (end_bin + start_bin)/2.;
+	double sum1 = 0, sum2 = 0;
+	for (int j=start_bin; j<=mid_bin;j++)
+	  sum1 += h_sig->GetBinContent(j+1);
+	for (int j=mid_bin;j<=end_bin;j++)
+	  sum2 += h_sig->GetBinContent(j+2);
+	if (max_bin > mid_bin){
+	  if (sum1 > threshold*10)
+	    identified_hits.push_back(std::make_tuple(start_bin, (start_bin+mid_bin)/2., mid_bin, sum1));
+	  if (sum2 > threshold*10)
+	    identified_hits.push_back(std::make_tuple(mid_bin, max_bin, end_bin, sum2));
+	}else{
+	  if (sum1 > threshold*10)
+	    identified_hits.push_back(std::make_tuple(start_bin, max_bin, mid_bin, sum1));
+	  if (sum2 > threshold*10)
+	    identified_hits.push_back(std::make_tuple(mid_bin, (mid_bin+end_bin)/2., end_bin, sum2));
+	}
+	
+      }else{
+	double sum = 0;
+	for (int j=start_bin; j<= end_bin;j++){
+	  sum += h_sig->GetBinContent(j+1);
+	}	
+	if (sum > threshold*10.){
+	  identified_hits.push_back(std::make_tuple(start_bin, max_bin, end_bin, sum));
+	  
+	}
+      }
+    }
+    
+  } // search ...
+
+  
+  
+
+  delete s;
+  
   if (identified_hits.size()>0){
     double max = 0;
     for (size_t i=0;i!=identified_hits.size();i++){
@@ -302,7 +469,6 @@ double WCPPIONEER::detect_t0(TH1F *h_sig, double threshold,   std::vector<std::t
   }
 
   //  std::cout << threshold << " " << t0 << " " << identified_hits.size() << std::endl;
-
   // std::cout << identified_hits.size() << std::endl;
   
   return t0;
