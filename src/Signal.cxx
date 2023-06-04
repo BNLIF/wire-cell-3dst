@@ -124,14 +124,14 @@ void WCPPIONEER::gauss_fit(TH1F *h_decon, double threshold, double filter_width,
   for (Int_t i=0;i<h_decon->GetNbinsX();i++){
     double content = h_decon->GetBinContent(i+1);
     
-    if (content > threshold){
+    if (content > threshold*0.6){
       //std::cout <<i << " " << content<< " " << threshold << std::endl;
       //      max_bin = i;
       start_bin = i;
       bool flag_continue = true;
       while(flag_continue){
 	if (start_bin - 1 >= 0 ){
-	  if (h_decon->GetBinContent(start_bin) > threshold * 0.3){
+	  if (h_decon->GetBinContent(start_bin) > threshold * 0.2){
 	    start_bin --;
 	  }else{
 	    flag_continue = false;
@@ -142,7 +142,7 @@ void WCPPIONEER::gauss_fit(TH1F *h_decon, double threshold, double filter_width,
       for (end_bin = i; end_bin < h_decon->GetNbinsX(); end_bin++){
 	//	if (h_decon->GetBinContent(end_bin+1) > h_decon->GetBinContent(max_bin+1))
 	//  max_bin = end_bin;
-	if (h_decon->GetBinContent(end_bin+1) < threshold * 0.3)
+	if (h_decon->GetBinContent(end_bin+1) < threshold * 0.2)
 	  break;
       }
 
@@ -167,7 +167,7 @@ void WCPPIONEER::gauss_fit(TH1F *h_decon, double threshold, double filter_width,
     
   }
   
-  //std::cout << fitting_ranges.size() << " " << fitting_ranges.back().first << " " << fitting_ranges.back().second << std::endl;
+  //  std::cout << fitting_ranges.size() << " " << fitting_ranges.back().first << " " << fitting_ranges.back().second << std::endl;
 
 
   gshf::MarqFitAlg *fitter;
@@ -184,7 +184,7 @@ void WCPPIONEER::gauss_fit(TH1F *h_decon, double threshold, double filter_width,
     int nData = it->second - it->first + 1;
     float y[1000];
     for (int i=it->first; i!=it->second+1;i++){
-      y[i-it->first] = h_decon->GetBinContent(i+1) ;
+      y[i-it->first] = h_decon->GetBinContent(i+1) * 100;
       //      std::cout << i-it->first << " " << y[i-it->first] << std::endl;
     }
     
@@ -195,22 +195,24 @@ void WCPPIONEER::gauss_fit(TH1F *h_decon, double threshold, double filter_width,
 
       double max = 0;
       double max_bin = peak_time;
-      for (int bin = peak_time - 1/width; bin != peak_time + 1/width; bin++){
+      for (int bin = peak_time - 2/width; bin != peak_time + 2/width; bin++){
 	double content = h_decon->GetBinContent(bin+1);
-	if (content > max){
+	double content_m = h_decon->GetBinContent(bin);
+	double content_p = h_decon->GetBinContent(bin+2);
+	if (content > max && content >= content_m && content >= content_p){
 	  max = content;
 	  max_bin = bin;
 	}
       }
-      //std::cout << peak_time << " " << max_bin << std::endl;
+      //      std::cout << peak_time << " " << max_bin << std::endl;
       peak_time = max_bin;
       
       double area = std::get<3>(*it1);
       double peak_height  =  area/time_width/sqrt(2.*3.1415926);
 
-      p[3*ncount+0] = peak_height; p[3*ncount + 1] = peak_time-it->first ; p[3*ncount + 2] = time_width;
-      plimmin[3*ncount + 0] = peak_height * 0.5; plimmin[3*ncount+1] = peak_time -1/width -it->first ; plimmin[3*ncount+2] = time_width_low;
-      plimmax[3*ncount + 0] = peak_height*2; plimmax[3*ncount+1] = peak_time +1/width -it->first ; plimmax[3*ncount+2] = time_width_high;
+      p[3*ncount+0] = peak_height * 100; p[3*ncount + 1] = peak_time-it->first ; p[3*ncount + 2] = time_width;
+      plimmin[3*ncount + 0] = peak_height * 0.2 * 100; plimmin[3*ncount+1] = peak_time -1/width -it->first ; plimmin[3*ncount+2] = time_width_low;
+      plimmax[3*ncount + 0] = peak_height*3 * 100; plimmax[3*ncount+1] = peak_time +1/width -it->first ; plimmax[3*ncount+2] = time_width_high;
 
       
       //      std::cout << peak_time << " " << time_width/10. << " " << area/time_width/sqrt(2.*3.1415926) << std::endl;
@@ -220,7 +222,7 @@ void WCPPIONEER::gauss_fit(TH1F *h_decon, double threshold, double filter_width,
 
     int nParam = 3*ncount;
     
-    // std::cout << it->first << std::endl;
+    // // std::cout << it->first << std::endl;
     // std::cout << "Before: ";
     // for (Int_t i=0;i!=nParam;i++){
     //   std::cout <<  p[i] << " " << plimmin[i] << "  "<< plimmax[i] << " " << std::endl;// << par[1] << " " << par[2] << std::endl;
@@ -243,9 +245,9 @@ void WCPPIONEER::gauss_fit(TH1F *h_decon, double threshold, double filter_width,
     // convert the fit parameters back to hit parameters and save ...
 
     for (int i=0;i!=ncount;i++){
-      std::tuple<double, double, double, double, double, double, double> fit_hit = std::make_tuple(p[3*i+0], p[3*i+1]*width + (it->first) * width, p[3*i+2]*width, p[3*i+0]*sqrt(2.*3.1415926) * p[3*i+2], lambda, chiSqr, dchiSqr);
+      std::tuple<double, double, double, double, double, double, double> fit_hit = std::make_tuple(p[3*i+0]/100., p[3*i+1]*width + (it->first) * width, p[3*i+2]*width, p[3*i+0]*sqrt(2.*3.1415926) * p[3*i+2]/100., lambda, chiSqr, dchiSqr);
 
-      std::cout << p[3*i+0]<< " " <<  p[3*i+1]*width << " " <<  p[3*i+2]*width << " " <<  p[3*i+0]*sqrt(2.*3.1415926) * p[3*i+2] << " " <<  lambda << " " <<  chiSqr << " " <<  dchiSqr << std::endl;
+      std::cout << p[3*i+0]/100.<< " " <<  p[3*i+1]*width << " " <<  p[3*i+2]*width << " " <<  p[3*i+0]*sqrt(2.*3.1415926) * p[3*i+2]/100. << " " <<  lambda << " " <<  chiSqr << " " <<  dchiSqr << std::endl;
       fitted_hits.push_back(fit_hit);
     }
     
@@ -267,8 +269,9 @@ double WCPPIONEER::detect_t0(TH1F *h_sig, double threshold,   std::vector<std::t
   std::vector<std::tuple<int, int, int, double, int> > temp_hits;
   for (Int_t i=0;i<h_sig->GetNbinsX();i++){
     double content = h_sig->GetBinContent(i+1);
-  
-    if (content > threshold){
+    double content_1 = h_sig->GetBinContent(i-1) + h_sig->GetBinContent(i+1);
+    
+    if (content > threshold || content + content_1 > threshold*2.5){
       //std::cout <<i << " " << content<< " " << threshold << std::endl;
       
       max_bin = i;
@@ -418,7 +421,7 @@ double WCPPIONEER::detect_t0(TH1F *h_sig, double threshold,   std::vector<std::t
       max_bin = std::get<1>(*it1);
       end_bin = std::get<2>(*it1);
       
-      if (end_bin - start_bin > 50){ // split to two ...
+      if (end_bin - start_bin > 45){ // split to two ...
 	int mid_bin = (end_bin + start_bin)/2.;
 	double sum1 = 0, sum2 = 0;
 	for (int j=start_bin; j<=mid_bin;j++)
